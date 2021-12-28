@@ -1,3 +1,4 @@
 godot/*.zig
 .vscode/
 zig-cache/
+zig-out/

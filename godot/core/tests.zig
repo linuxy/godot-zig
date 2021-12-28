@@ -1,20 +1,21 @@
 test "register class" {
     const core = @import("index.zig");
-    const godot = @import("../index.zig");
+    const godot = @import("godot");
     const Test = struct {
         const Self = @This();
-        const Parent = godot.Node2D;
+        pub const Parent = godot.Node2D;
         base: *Parent,
         hi: i32,
 
-        fn init(self: *Self) void {
+        pub fn init(self: *Self) void {
+            _ = self;
         }
 
-        fn derp() void {
+        pub fn derp() void {
         }
     };
 
     core.api.registerClass(Test);
-    core.api.registerMethod(@typeOf(Test.init), c"Test", c"init", Test.init);
-    core.api.registerMethod(@typeOf(Test.derp), c"Test", c"derp", Test.derp);
+    core.api.registerMethod(@TypeOf(Test.init), "Test", "init", Test.init);
+    core.api.registerMethod(@TypeOf(Test.derp), "Test", "derp", Test.derp);
 }
