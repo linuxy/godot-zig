@@ -3,7 +3,7 @@ import os
 import re
 
 OutputDir = 'godot/'
-DefaultApiPath = 'godot_api.json'
+DefaultApiPath = 'godot-headers/api.json'
 GodotFile = 'index.zig'
 ConstantsFile = 'global_constants.zig'
 
@@ -41,7 +41,7 @@ def name_to_zig_var(name):
     for i, p in enumerate(parts):
         if i == 0: continue
         parts[i] = p[0].upper() + p[1:]
-    return escape_zig_name(''.join(parts))
+    return escape_zig_func_name(''.join(parts))
 
 def generate_api(api):
     if not os.path.exists(OutputDir):
@@ -61,8 +61,8 @@ def generate_api(api):
     imports = []
     for f in files:
         if len(f.strip()) > 0:
-            imports.append('pub use @import("{0}.zig");'.format(f))
-    imports.append('pub use @import("core/index.zig");')
+            imports.append('pub usingnamespace @import("{0}.zig");'.format(f))
+    imports.append('pub usingnamespace @import("core/index.zig");')
     with open(OutputDir + GodotFile, 'w+') as f:
         f.write('\n'.join(imports))
 
@@ -117,6 +117,35 @@ def type_to_zig_type(name):
 def method_name_to_ptr_name(name):
     return name + 'Ptr'
 
+def escape_zig_func_name(name):
+    if name == 'var':
+        return 'var_'
+    if name == 'section':
+        return 'section_'
+    if name == 'error':
+        return 'error_'
+    if name == 'align':
+        return 'align_'
+    if name == 'use':
+        return 'use_'
+    if name == 'resume':
+        return 'resume_'
+    if name == 'cancel':
+        return 'cancel_'
+    if name == 'export':
+        return 'export_'
+    if name == 'type':
+        return '@"type"'
+    if name == 'bool':
+        return '@"bool"'
+    if name == 'c':
+        return '_c'
+    if name == 'args':
+        return '_args'
+    if name == 'new':
+        return '_new'
+    return name
+
 def escape_zig_name(name):
     if name == 'var':
         return 'var_'
@@ -134,6 +163,22 @@ def escape_zig_name(name):
         return 'cancel_'
     if name == 'export':
         return 'export_'
+    if name == 'type':
+        return '@"type"'
+    if name == 'bool':
+        return '@"bool"'
+    if name == 'c':
+        return '_c'
+    if name == 'args':
+        return '_args'
+    if name == 'new':
+        return '_new'
+    if name == 'draw':
+        return '_draw'
+    if name == 'index':
+        return '_index'
+    if name == 'enum':
+        return '@"enum"'
     return name
 
 def generate_method(class_name, method, has_base=True):
@@ -152,25 +197,26 @@ def generate_method(class_name, method, has_base=True):
     source.append(') {0} {{'.format(return_type))
     source.append('''
     if ({0} == null) {{
-        {0} = godot.api.getMethod(c"{1}", c"{2}");
+        {0} = godot.api.getMethod("{1}", "{2}");
     }}
     '''.format(ptr_name, class_name, method['name']))
-    source.append('var result: ?*c_void = null;\n')
+    source.append('_ = self;\n')
+    source.append('var _result: ?*anyopaque = null;\n')
     if args_len > 0:
         for i, arg in enumerate(method['arguments']):
             _, is_struct = type_to_zig_type(arg['type'])
             struct = '' if is_struct else '*'
-            source.append('    var arg{0}: ?*const c_void = @ptrCast(*const c_void, {1}{2});\n'.format(i, struct, escape_zig_name(arg['name'])))
-        source.append('    var args: [{0}]?*const c_void = []?*const c_void {{'.format(args_len))
+            source.append('    var _arg{0}: ?*const anyopaque = @ptrCast(*const anyopaque, {1}{2});\n'.format(i, struct, escape_zig_name(arg['name'])))
+        source.append('    var args: [{0}]?*const anyopaque = []?*const anyopaque {{'.format(args_len))
         for i, arg in enumerate(method['arguments']):
-            source.append('arg{0},'.format(i))
-        source.append('''};\n    var cargs: ?*?*const c_void = &args[0];\n''')
+            source.append('_arg{0},'.format(i))
+        source.append('''};\n    var cargs: ?*?*const anyopaque = &args[0];\n''')
     else:
-        source.append('    var cargs: ?*?*const c_void = null;\n')
+        source.append('    var cargs: ?*?*const anyopaque = null;\n')
     base = '@ptrCast(*c.godot_object, @alignCast(@alignOf(*c.godot_object), self.base))' if has_base else 'null'
-    source.append('    _ = godot.api.core.?.godot_method_bind_ptrcall.?({0}, {1}, cargs, result);\n'.format(ptr_name, base))
+    source.append('    _ = godot.api.core.?.godot_method_bind_ptrcall.?({0}, {1}, cargs, _result);\n'.format(ptr_name, base))
     if return_type != 'void':
-        source.append('    return @ptrCast(*{0}, @alignCast(@alignOf(&{0}), result)).*;\n'.format(return_type))
+        source.append('    return @ptrCast(*{0}, @alignCast(@alignOf(&{0}), _result)).*;\n'.format(return_type))
     source.append('}')
     return ''.join(source)
 
@@ -181,7 +227,7 @@ def generate_obj(item):
     name = item['name']
     source.append('const godot = @import("index.zig");')
     source.append('const c = @import("core/c.zig");')
-    source.append('const as = @import("util.zig").as;')
+    source.append('const as = @import("core/util.zig").as;')
     if item['base_class'] != '':
         source.append('const {0} = @import("{1}.zig").{0};'.format(item['base_class'], name_to_zig_file(item['base_class'])))
     source.append('\n// Function pointers \n')
@@ -189,7 +235,7 @@ def generate_obj(item):
         if method['is_virtual']:
             continue
         source.append('var {0}: ?*c.godot_method_bind = null;'.format(method_name_to_ptr_name(name + name_to_zig_var(method['name']))))
-    source.append('var {0}: ?extern fn() ?*c.godot_object = null;'.format(method_name_to_ptr_name(name + 'constructor')))
+    source.append('var {0}: ?fn() ?*c.godot_object = null;'.format(method_name_to_ptr_name(name + 'constructor')))
     source.append('\n//End function pointers\npub const {0} = struct {{'.format(name))
     if item['base_class'] != '':
         source.append('const Parent = {0};'.format(item['base_class']))
@@ -199,7 +245,7 @@ def generate_obj(item):
         source.append('base: *Parent,')
     source.append('tmp: u8,')
     source.append('pub fn new() *Self {')
-    source.append('if ({0} == null) {{ {0} = godot.api.getConstructor(c"{1}"); }}'.format(method_name_to_ptr_name(name + 'constructor'), name))
+    source.append('if ({0} == null) {{ {0} = godot.api.getConstructor("{1}"); }}'.format(method_name_to_ptr_name(name + 'constructor'), name))
     source.append('return godot.api.newObj(Self, {0}.?);'.format(method_name_to_ptr_name(name + 'constructor')))
     source.append('}')
     source.append('''pub fn destroy(self: *Self) void {
