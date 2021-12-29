@@ -11,5 +11,5 @@ $ zig build
 
 ## Setup
 * Copy example.dll to your Godot project folder
-* Follow these setups to create a .gdnlib pointing to example.dll and a .gdns file
+* Follow these steps to create a .gdnlib pointing to example.dll and a .gdns file
 https://docs.godotengine.org/en/stable/tutorials/plugins/gdnative/gdnative-c-example.html
