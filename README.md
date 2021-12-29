@@ -4,6 +4,8 @@ Godot 3.4 GDNative bindings for Zig
 builds against zig 0.9.0
 ## Building
 ```
+$ git submodule update --init --recursive
+$ python gen.py
 $ zig build
 ```
 
