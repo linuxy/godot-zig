@@ -1,5 +1,5 @@
 test "register class" {
-    const core = @import("index.zig");
+    const core = @import("core");
     const godot = @import("godot");
     const Test = struct {
         const Self = @This();

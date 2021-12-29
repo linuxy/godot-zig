@@ -5,7 +5,7 @@ pub usingnamespace @import("string.zig");
 
 const TypeInfo = @import("builtin").TypeInfo;
 const util = @import("util.zig");
-const c = @import("c.zig");
+pub const c = @import("c.zig");
 const std = @import("std");
 // const godot = @import("../index.zig");
 const assert = std.debug.assert;
@@ -85,9 +85,11 @@ fn GodotWrapper(comptime T: type) type {
 fn GodotFns(comptime T: type) type {
     return struct {
         fn create(obj: ?*c.godot_object, data: ?*anyopaque) callconv(.C) ?*anyopaque {
+            std.log.info("create?()", .{});
             _ = data;
             var t: *T = std.heap.c_allocator.create(T) catch std.os.abort();
             t.base = @ptrCast(*T.Parent, @alignCast(@alignOf(T.Parent), obj.?));
+            std.log.info("init?()", .{});
             if (util.hasField(T, "init")) {
                 t.init();
             }
@@ -97,6 +99,7 @@ fn GodotFns(comptime T: type) type {
         fn destroy(obj: ?*c.godot_object, method_data: ?*anyopaque, data: ?*anyopaque) callconv(.C) void {
             _ = method_data;
             _ = obj;
+            std.log.info("destroy()", .{});
             std.heap.c_allocator.destroy(@ptrCast(*T, @alignCast(@alignOf(T), data.?)));
         }
     };
@@ -176,12 +179,12 @@ pub const GodotApi = struct {
     /// This needs to be called in `export godot_gdnative_init(options: *godot.Options) void`
     pub fn initCore(self: *Self, options: *Options) void {
         _ = self;
-        api.core = options.api_struct;
-        var i = 0;
-        while (i < api.core.num_extensions) {
-            switch (api.core.extensions[i].type) {
+        api.core = unsafePtrCast(*CoreApi, options.api_struct);
+        var i: usize = 0;
+        while (i < api.core.?.num_extensions) {
+            switch (api.core.?.extensions[i].*.type) {
                 c.GDNATIVE_EXT_NATIVESCRIPT => {
-                    var nativeApi = @ptrCast(*c.godot_gdnative_ext_nativescript_api_struct, api.extensions[i]);
+                    var nativeApi = unsafePtrCast(*c.godot_gdnative_ext_nativescript_api_struct, api.core.?.extensions[i]);
                     api.native = nativeApi;
                 },
                     else => {}
@@ -225,19 +228,21 @@ pub const GodotApi = struct {
         defer gpa.free(base);
         
         const Fns = GodotFns(T);
+
         var cfn: CreateFn = Fns.create;
         var createFunc = c.godot_instance_create_func { 
             .create_func = @ptrCast(CreateFn, &cfn), 
             .method_data = null, 
             .free_func = null
         };
+        std.log.info("createFunc: {s}", .{createFunc.create_func});
         var dfn: DestroyFn = Fns.destroy;
         var destroyFunc = c.godot_instance_destroy_func {
             .destroy_func = @ptrCast(DestroyFn, &dfn),
             .method_data = null,
             .free_func = null,
         };
-
+        std.log.info("destroyFunc: {s}", .{destroyFunc.destroy_func});
         if (self.native) |native| {
             native.godot_nativescript_register_class.?(self.handle, name.ptr, base.ptr, createFunc, destroyFunc);
         } else {
@@ -258,7 +263,7 @@ pub const GodotApi = struct {
         // create a wrapper function
         const Wrapper = GodotWrapper(F);
         var wrapped: WrapperFn = Wrapper.wrapped;
-    
+
         var mfn = unsafePtrCast(*anyopaque, &func);
         var data = c.godot_instance_method {
             .method = @ptrCast(WrapperFn, &wrapped),
