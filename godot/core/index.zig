@@ -84,7 +84,7 @@ fn GodotWrapper(comptime T: type) type {
 
 fn GodotFns(comptime T: type) type {
     return struct {
-        fn create(obj: ?*c.godot_object, data: ?*anyopaque) callconv(.C) ?*anyopaque {
+        pub fn create(obj: ?*c.godot_object, data: ?*anyopaque) callconv(.C) ?*anyopaque {
             std.log.info("create?()", .{});
             _ = data;
             var t: *T = std.heap.c_allocator.create(T) catch std.os.abort();
@@ -96,7 +96,7 @@ fn GodotFns(comptime T: type) type {
             return @ptrCast(*anyopaque, t);
         }
 
-        fn destroy(obj: ?*c.godot_object, method_data: ?*anyopaque, data: ?*anyopaque) callconv(.C) void {
+        pub fn destroy(obj: ?*c.godot_object, method_data: ?*anyopaque, data: ?*anyopaque) callconv(.C) void {
             _ = method_data;
             _ = obj;
             std.log.info("destroy()", .{});
@@ -231,19 +231,20 @@ pub const GodotApi = struct {
 
         var cfn: CreateFn = Fns.create;
         var createFunc = c.godot_instance_create_func { 
-            .create_func = @ptrCast(CreateFn, &cfn), 
+            .create_func = cfn, 
             .method_data = null, 
             .free_func = null
         };
         std.log.info("createFunc: {s}", .{createFunc.create_func});
         var dfn: DestroyFn = Fns.destroy;
         var destroyFunc = c.godot_instance_destroy_func {
-            .destroy_func = @ptrCast(DestroyFn, &dfn),
+            .destroy_func = dfn,
             .method_data = null,
             .free_func = null,
         };
         std.log.info("destroyFunc: {s}", .{destroyFunc.destroy_func});
         if (self.native) |native| {
+            std.log.info("registerClass() handle: {*} name: {*} base: {*}", .{self.handle, name.ptr, base.ptr});
             native.godot_nativescript_register_class.?(self.handle, name.ptr, base.ptr, createFunc, destroyFunc);
         } else {
             std.log.warn("NativeScript API hasn't been initialized!\n", .{});
@@ -257,7 +258,7 @@ pub const GodotApi = struct {
     pub fn registerMethod(self: *Self, comptime F: type, classname: [*]const u8, methodname: [*]const u8, func: anytype) void {
         var attributes = c.godot_method_attributes {
             // TODO: Support different method attributes
-            .rpc_type = c.GODOT_METHOD_RPC_MODE_DISABLED
+            .rpc_type = c.GODOT_METHOD_RPC_MODE_DISABLED,
         };
         
         // create a wrapper function
@@ -272,6 +273,7 @@ pub const GodotApi = struct {
         };
 
         if (self.native) |native| {
+            std.log.info("registerMethod() handle: {*} func: {s}", .{self.handle, data});
             native.godot_nativescript_register_method.?(self.handle, classname, methodname, attributes, data);
         } else {
             std.log.warn("NativeScript API hasn't been initialized!\n", .{});

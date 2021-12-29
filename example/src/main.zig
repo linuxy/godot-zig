@@ -2,7 +2,9 @@ const std = @import("std");
 const core = @import("core");
 const godot = @import("godot");
 
-const Test = struct {
+pub const log_level: std.log.Level = .warn;
+
+pub const Test = struct {
     const Self = @This();
 
     pub const Parent = godot.Node2D;
