@@ -15,18 +15,18 @@ var memoryBuffer: [3000]u8 = undefined;
 pub const Options = c.godot_gdnative_init_options;
 pub const Handle = anyopaque;
 
-const WrapperFn = ?fn(?*c.godot_object, ?*anyopaque, ?*anyopaque, c_int, ?[*]?[*]c.godot_variant) callconv(.C) c.godot_variant;
-const CreateFn = ?fn(?*c.godot_object, ?*anyopaque) callconv(.C) ?*anyopaque;
-const DestroyFn = ?fn(?*c.godot_object, ?*anyopaque, ?*anyopaque) callconv(.C) void;
-const FreeFn = ?fn(?*anyopaque) void;
-const ConstructorFn = ?fn() callconv(.C) ?*c.godot_object;
+pub const WrapperFn = ?fn(?*c.godot_object, ?*anyopaque, ?*anyopaque, c_int, ?[*]?[*]c.godot_variant) callconv(.C) c.godot_variant;
+pub const CreateFn = ?fn(?*c.godot_object, ?*anyopaque) callconv(.C) ?*anyopaque;
+pub const DestroyFn = ?fn(?*c.godot_object, ?*anyopaque, ?*anyopaque) callconv(.C) void;
+pub const FreeFn = ?fn(?*anyopaque) void;
+pub const ConstructorFn = ?fn() callconv(.C) ?*c.godot_object;
 
 var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
 var gpa = general_purpose_allocator.allocator();
 
-fn GodotWrapper(comptime T: type) type {
+fn GodotWrapper(comptime T: anytype) type {
     return extern struct { 
-        fn wrapped(obj: ?*c.godot_object, data: ?*anyopaque, userdata: ?*anyopaque, num: c_int, cargs: ?[*]?[*]c.godot_variant) callconv(.C) c.godot_variant {
+        fn wrapped(obj: ?*c.godot_object, data: ?*const anyopaque, userdata: ?*anyopaque, num: c_int, cargs: ?[*]?[*]c.godot_variant) callconv(.C) c.godot_variant {
             _ = data;
             _ = userdata;
             _ = obj;
@@ -35,37 +35,40 @@ fn GodotWrapper(comptime T: type) type {
             // TODO: Figure out how to turn array into varargs while casting each
             // argument into the proper type for the function call
             // Refer to how godot_cpp does this.
-            const Info = @typeInfo(T);
+            const Info = @typeInfo(@TypeOf(T));
             const Args = Info.Fn.args;
-            var args = cargs.?[0..@intCast(usize, num)];
-            var func = @ptrCast(T, data);
+            var args: []?[*]c.godot_variant = undefined;
+            if(cargs != null) {
+                args = cargs.?[0..@intCast(usize, num)];
+            }
+            var func = @ptrCast(*const @TypeOf(T), @alignCast(@alignOf(@TypeOf(T)), data));
             switch (Args.len) {
                 0 => {
-                    _ = func();
+                    @call(.{}, func.*, .{});
                 },
                 1 => {
                     // TODO: godot_variant can't directly be casted
                     // If the variant is an object use godot_nativescript_get_userdata
                     var arg0 = @ptrCast(Args[0].arg_type.?, @alignCast(@alignOf(Args[0].arg_type.?), args[0]));
-                    _ = func(arg0);
+                    @call(.{}, func.*, .{arg0});
                 },
                 2 => { 
                     var arg0 = @ptrCast(Args[0].arg_type, @alignCast(@alignOf(Args[0].arg_type), args[0]));
                     var arg1 = @ptrCast(Args[1].arg_type, @alignCast(@alignOf(Args[1].arg_type), args[1]));
-                    _ = func(arg0, arg1);
+                    @call(.{}, func.*, .{arg0, arg1});
                 },
                 3 => {
                     var arg0 = @ptrCast(Args[0].arg_type, @alignCast(@alignOf(Args[0].arg_type), args[0]));
                     var arg1 = @ptrCast(Args[1].arg_type, @alignCast(@alignOf(Args[1].arg_type), args[1]));
                     var arg2 = @ptrCast(Args[2].arg_type, @alignCast(@alignOf(Args[2].arg_type), args[2]));
-                    _ = func(arg0, arg1, arg2);
+                    @call(.{}, func.*, .{arg0, arg1, arg2});
                 },
                 4 => { 
                     var arg0 = @ptrCast(Args[0].arg_type, @alignCast(@alignOf(Args[0].arg_type), args[0]));
                     var arg1 = @ptrCast(Args[1].arg_type, @alignCast(@alignOf(Args[1].arg_type), args[1]));
                     var arg2 = @ptrCast(Args[2].arg_type, @alignCast(@alignOf(Args[2].arg_type), args[2]));
                     var arg3 = @ptrCast(Args[3].arg_type, @alignCast(@alignOf(Args[3].arg_type), args[3]));
-                    _ = func(arg0, arg1, arg2, arg3);
+                    @call(.{}, func.*, .{arg0, arg1, arg2, arg3});
                 },
                 5 => { 
                     var arg0 = @ptrCast(Args[0].arg_type, @alignCast(@alignOf(Args[0].arg_type), args[0]));
@@ -73,7 +76,7 @@ fn GodotWrapper(comptime T: type) type {
                     var arg2 = @ptrCast(Args[2].arg_type, @alignCast(@alignOf(Args[2].arg_type), args[2]));
                     var arg3 = @ptrCast(Args[3].arg_type, @alignCast(@alignOf(Args[3].arg_type), args[3]));
                     var arg4 = @ptrCast(Args[4].arg_type, @alignCast(@alignOf(Args[4].arg_type), args[4]));
-                    _ = func(arg0, arg1, arg2, arg3, arg4);
+                    @call(.{}, func.*, .{arg0, arg1, arg2, arg3, arg4});
                 },
                 else => {}
             }
@@ -255,7 +258,7 @@ pub const GodotApi = struct {
         // TODO: Look at T.Inspector const and register all fields with Godot Inspector
     }
 
-    pub fn registerMethod(self: *Self, comptime F: type, classname: [*]const u8, methodname: [*]const u8, func: anytype) void {
+    pub fn registerMethod(self: *Self, comptime F: anytype, classname: [*]const u8, methodname: [*]const u8, comptime func: anytype) void {
         var attributes = c.godot_method_attributes {
             // TODO: Support different method attributes
             .rpc_type = c.GODOT_METHOD_RPC_MODE_DISABLED,
@@ -267,7 +270,7 @@ pub const GodotApi = struct {
 
         var mfn = unsafePtrCast(*anyopaque, &func);
         var data = c.godot_instance_method {
-            .method = @ptrCast(WrapperFn, &wrapped),
+            .method = wrapped,
             .method_data = mfn, 
             .free_func = null,
         };

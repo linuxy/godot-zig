@@ -19,7 +19,7 @@ pub fn build(builder: *Builder) void {
     exe.addPackage(core);
     exe.addPackage(godot);
     exe.linkSystemLibrary("c");
-
+    
     builder.default_step.dependOn(&exe.step);
     builder.installArtifact(exe);
 
