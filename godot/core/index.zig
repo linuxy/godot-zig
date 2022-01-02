@@ -258,7 +258,7 @@ pub const GodotApi = struct {
         // TODO: Look at T.Inspector const and register all fields with Godot Inspector
     }
 
-    pub fn registerMethod(self: *Self, comptime F: anytype, classname: [*]const u8, methodname: [*]const u8, comptime func: anytype) void {
+    pub fn registerMethod(self: *Self, comptime F: anytype, classname: [*]const u8, methodname: [*]const u8) void {
         var attributes = c.godot_method_attributes {
             // TODO: Support different method attributes
             .rpc_type = c.GODOT_METHOD_RPC_MODE_DISABLED,
@@ -268,7 +268,7 @@ pub const GodotApi = struct {
         const Wrapper = GodotWrapper(F);
         var wrapped: WrapperFn = Wrapper.wrapped;
 
-        var mfn = unsafePtrCast(*anyopaque, &func);
+        var mfn = unsafePtrCast(*anyopaque, &F);
         var data = c.godot_instance_method {
             .method = wrapped,
             .method_data = mfn, 

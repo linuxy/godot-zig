@@ -16,6 +16,5 @@ test "register class" {
     };
 
     core.api.registerClass(Test);
-    core.api.registerMethod(@TypeOf(Test.init), "Test", "init", Test.init);
-    core.api.registerMethod(@TypeOf(Test.derp), "Test", "derp", Test.derp);
+    core.api.registerMethod(Test.derp, "Test", "derp");
 }

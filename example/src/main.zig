@@ -24,7 +24,7 @@ export fn godot_nativescript_init(p_handle: *anyopaque) void {
     std.log.info("godot_nativescript_init()", .{});
     core.api.initNative(p_handle);
     core.api.registerClass(Test);
-    core.api.registerMethod(Test.derp, "Test", "derp", Test.derp);
+    core.api.registerMethod(Test.derp, "Test", "derp");
 }
 
 export fn godot_gdnative_init(o: *core.c.godot_gdnative_init_options) void {
