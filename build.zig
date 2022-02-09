@@ -15,11 +15,14 @@ pub fn build(builder: *Builder) void {
     var exe = builder.addSharedLibrary("example", "example/src/main.zig", .{ .unversioned = {} });
     exe.setBuildMode(builder.standardReleaseOptions());
     exe.install();
-    exe.addIncludeDir("./godot-headers/");
+    exe.addIncludeDir("godot-headers");
     exe.addPackage(core);
     exe.addPackage(godot);
     exe.linkSystemLibrary("c");
-    
+
+    exe.addIncludeDir("godot");
+    exe.addCSourceFiles(&.{ "godot/native/gdnative.gen.c" }, &.{} );
+
     builder.default_step.dependOn(&exe.step);
     builder.installArtifact(exe);
 

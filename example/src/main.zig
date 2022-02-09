@@ -1,6 +1,7 @@
 const std = @import("std");
 const core = @import("core");
 const godot = @import("godot");
+const Utf8View = @import("std").unicode.Utf8View;
 
 pub const log_level: std.log.Level = .info;
 
@@ -10,13 +11,24 @@ pub const Test = struct {
     pub const Parent = godot.Node2D;
     base: *Parent,
     hi: i32,
-    
+
     pub fn init(self: *Self) void {
         _ = self;
         std.log.info("init()", .{});
     }
     pub fn derp() void {
         std.log.info("derp()", .{});
+        var godot_string: core.c.godot_string = undefined;
+
+        var zstr = u8ToWideString("hello from zig->godot_print()!");
+
+        core.c.zig_godot_string_new_with_wide_string(
+            core.api.core,
+            &godot_string,
+            zstr.ptr,
+            zstr.len,
+        );
+        core.c.zig_godot_print(core.api.core, &godot_string);
     }
 };
 
@@ -38,3 +50,23 @@ export fn godot_gdnative_terminate(o: *core.c.godot_gdnative_terminate_options) 
     core.api = undefined;
     _ = o;
 }
+
+pub fn u8ToWideString(string: [:0]const u8) GString {
+    const allocator = std.heap.c_allocator;
+    const result = allocator.alloc(c_ushort, string.len) catch unreachable;
+    const result_ptr = @ptrCast([*c]c_ushort, @alignCast(@alignOf(*c_ushort), result));
+
+    var ustr = Utf8View.init(string) catch unreachable;
+    var it = ustr.iterator();
+    var i: usize = 0;
+    while (it.nextCodepoint()) |cp| {
+        result_ptr[i] = @intCast(c_ushort, cp);
+        i += 1;
+    }
+    return .{ .ptr = result_ptr, .len = @intCast(c_int, i) };
+}
+
+const GString = struct {
+    ptr: [*c]c_ushort,
+    len: c_int,
+};
