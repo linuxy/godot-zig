@@ -53,20 +53,20 @@ export fn godot_gdnative_terminate(o: *core.c.godot_gdnative_terminate_options) 
 
 pub fn u8ToWideString(string: [:0]const u8) GString {
     const allocator = std.heap.c_allocator;
-    const result = allocator.alloc(c_ushort, string.len) catch unreachable;
-    const result_ptr = @ptrCast([*c]c_ushort, @alignCast(@alignOf(*c_ushort), result));
+    const result = allocator.alloc(core.c.wchar_t, string.len) catch unreachable;
+    const result_ptr = @ptrCast([*c]core.c.wchar_t, @alignCast(@alignOf(*core.c.wchar_t), result));
 
     var ustr = Utf8View.init(string) catch unreachable;
     var it = ustr.iterator();
     var i: usize = 0;
     while (it.nextCodepoint()) |cp| {
-        result_ptr[i] = @intCast(c_ushort, cp);
+        result_ptr[i] = @intCast(core.c.wchar_t, cp);
         i += 1;
     }
     return .{ .ptr = result_ptr, .len = @intCast(c_int, i) };
 }
 
 const GString = struct {
-    ptr: [*c]c_ushort,
+    ptr: [*c]core.c.wchar_t,
     len: c_int,
 };
