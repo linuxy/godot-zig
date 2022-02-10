@@ -5,16 +5,16 @@
 #include <nativescript/godot_nativescript.h>
 
 /* GDNative NATIVESCRIPT C Gateway */
-void *cgo_gateway_create_func(godot_object *obj, void *method_data);
-void *cgo_gateway_destroy_func(godot_object *obj, void *method_data,
+void *zig_gateway_create_func(godot_object *obj, void *method_data);
+void *zig_gateway_destroy_func(godot_object *obj, void *method_data,
 			       void *user_data);
-void *cgo_gateway_free_func(void *method_data);
-godot_variant cgo_gateway_method_func(godot_object *obj, void *method_data,
+void *zig_gateway_free_func(void *method_data);
+godot_variant zig_gateway_method_func(godot_object *obj, void *method_data,
 				      void *user_data, int num_args,
 				      godot_variant **args);
-void cgo_gateway_property_set_func(godot_object *obj, void *method_data,
+void zig_gateway_property_set_func(godot_object *obj, void *method_data,
 				   void *user_data, godot_variant *property);
-godot_variant cgo_gateway_property_get_func(godot_object *obj,
+godot_variant zig_gateway_property_get_func(godot_object *obj,
 					    void *method_data, void *user_data);
 
 // Type definitions for any function pointers. Some of these are not defined in

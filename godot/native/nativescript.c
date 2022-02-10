@@ -5,49 +5,49 @@
 #include <stdlib.h>
 
 // This is a gateway function for the create method.
-void *cgo_gateway_create_func(godot_object *obj, void *method_data) {
-	// printf("CGO: C.go_create_func_cgo()\n");
+void *zig_gateway_create_func(godot_object *obj, void *method_data) {
+	// printf("zig: c.zig_create_func_zig()\n");
 	void *ret;
-	void *go_create_func(godot_object *, void *);
-	ret = go_create_func(obj, method_data);  // Execute our Go function.
+	void *zig_create_func(godot_object *, void *);
+	ret = zig_create_func(obj, method_data);  // Execute our Zig function.
 	return ret;
 }
 
 // This is a gateway function for the destroy method.
-void *cgo_gateway_destroy_func(godot_object *obj, void *method_data,
+void *zig_gateway_destroy_func(godot_object *obj, void *method_data,
 			       void *user_data) {
-	// printf("CGO: C.go_destroy_func_cgo()\n");
+	// printf("zig: c.zig_destroy_func_zig()\n");
 	void *ret;
-	void *go_destroy_func(godot_object *, void *, void *);
-	ret = go_destroy_func(obj, method_data,
-			      user_data);  // Execute our Go function.
+	void *zig_destroy_func(godot_object *, void *, void *);
+	ret = zig_destroy_func(obj, method_data,
+			      user_data);  // Execute our Zig function.
 	return ret;
 }
 
 // This is a gateway function for the free method.
-void *cgo_gateway_free_func(void *method_data) {
-	// printf("CGO: C.go_free_func_cgo()\n");
+void *zig_gateway_free_func(void *method_data) {
+	// printf("zig: c.zig_free_func_zig()\n");
 	void *ret;
-	void *go_free_func(void *);
-	ret = go_free_func(method_data);  // Execute our Go function.
+	void *zig_free_func(void *);
+	ret = zig_free_func(method_data);  // Execute our Zig function.
 	return ret;
 }
 
 // This is a gateway function for the method
 // GDCALLINGCONV godot_variant (*method)(godot_object *, void *, void *, int,
 // godot_variant **);
-// func go_method_func(godotObject *C.godot_object, methodData unsafe.Pointer,
-// userData unsafe.Pointer, numArgs C.uint, args **C.godot_variant) {
-godot_variant cgo_gateway_method_func(godot_object *obj, void *method_data,
+// func zig_method_func(godotObject *c.godot_object, methodData unsafe.Pointer,
+// userData unsafe.Pointer, numArgs c.uint, args **c.godot_variant) {
+godot_variant zig_gateway_method_func(godot_object *obj, void *method_data,
 				      void *user_data, int num_args,
 				      godot_variant **args) {
-	// printf("CGO: C.go_method_func_cgo()\n");
-	// printf("CGO: Number of arguments: %d\n", num_args);
+	// printf("zig: c.zig_method_func_zig()\n");
+	// printf("zig: Number of arguments: %d\n", num_args);
 	godot_variant ret;
-	godot_variant go_method_func(godot_object *, void *, void *, int,
+	godot_variant zig_method_func(godot_object *, void *, void *, int,
 				     godot_variant **);
-	ret = go_method_func(obj, method_data, user_data, num_args,
-			     args);  // Execute our Go function.
+	ret = zig_method_func(obj, method_data, user_data, num_args,
+			     args);  // Execute our Zig function.
 
 	return ret;
 }
@@ -55,25 +55,25 @@ godot_variant cgo_gateway_method_func(godot_object *obj, void *method_data,
 // This is a gateway function for the set property method.
 // GDCALLINGCONV void (*set_func)(godot_object *, void *, void *, godot_variant
 // *);
-void cgo_gateway_property_set_func(godot_object *obj, void *method_data,
+void zig_gateway_property_set_func(godot_object *obj, void *method_data,
 				   void *user_data, godot_variant *property) {
-	// printf("CGO: C.go_set_property_func()\n");
-	void go_set_property_func(godot_object *, void *, void *,
+	// printf("zig: c.zig_set_property_func()\n");
+	void zig_set_property_func(godot_object *, void *, void *,
 				  godot_variant *);
-	go_set_property_func(obj, method_data, user_data,
-			     property);  // Execute our Go function.
+	zig_set_property_func(obj, method_data, user_data,
+			     property);  // Execute our Zig function.
 }
 
 // This is a gateway function for the get property method.
 // GDCALLINGCONV godot_variant (*get_func)(godot_object *, void *, void *);
-godot_variant cgo_gateway_property_get_func(godot_object *obj,
+godot_variant zig_gateway_property_get_func(godot_object *obj,
 					    void *method_data,
 					    void *user_data) {
-	// printf("CGO: C.go_get_property_func()\n");
+	// printf("zig: c.zig_get_property_func()\n");
 	godot_variant ret;
-	godot_variant go_get_property_func(godot_object *, void *, void *);
-	ret = go_get_property_func(obj, method_data,
-				   user_data);  // Execute our Go function.
+	godot_variant zig_get_property_func(godot_object *, void *, void *);
+	ret = zig_get_property_func(obj, method_data,
+				   user_data);  // Execute our Zig function.
 
 	return ret;
 }
