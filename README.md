@@ -1,7 +1,12 @@
-# godot-zig
+
+# Deprecated
+* Recommended to use https://github.com/thimenesup/GodotZigBindings instead!
+
+## godot-zig
 Godot 3.4 GDNative bindings for Zig
 
 builds against zig 0.9.0
+
 ## Building
 ```
 $ git submodule update --init --recursive
